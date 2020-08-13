@@ -1,6 +1,6 @@
 
 #环境变量设置
-export IDF_PATH=~/esp/esp-skainet-AI/esp-idf/
+export IDF_PATH=~/test/Ai-Thinker-Open_ESP32-A1S_ASR_SDK/esp-idf
 
 
 #clean
