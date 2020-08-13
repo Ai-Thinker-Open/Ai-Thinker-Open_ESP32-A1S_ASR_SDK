@@ -1,0 +1,63 @@
+[submodule "components/esp32/lib"]
+	path = components/esp32/lib
+	url =  https://gitee.com/shangWen-gitee/esp32-wifi-lib.git
+
+[submodule "components/esptool_py/esptool"]
+	path = components/esptool_py/esptool
+	url =  https://gitee.com/shangWen-gitee/esptool.git
+
+[submodule "components/bt/lib"]
+	path = components/bt/lib
+	url =  https://gitee.com/shangWen-gitee/esp32-bt-lib.git
+
+[submodule "components/micro-ecc/micro-ecc"]
+	path = components/micro-ecc/micro-ecc
+	url =  https://gitee.com/shangWen-gitee/micro-ecc.git
+
+[submodule "components/coap/libcoap"]
+	path = components/coap/libcoap
+	url =  https://gitee.com/shangWen-gitee/libcoap.git
+
+[submodule "components/aws_iot/aws-iot-device-sdk-embedded-C"]
+	path = components/aws_iot/aws-iot-device-sdk-embedded-C
+	url =  https://gitee.com/shangWen-gitee/aws-iot-device-sdk-embedded-C.git
+
+[submodule "components/nghttp/nghttp2"]
+	path = components/nghttp/nghttp2
+	url =  https://gitee.com/shangWen-gitee/nghttp2.git
+
+[submodule "components/libsodium/libsodium"]
+	path = components/libsodium/libsodium
+	url =  https://gitee.com/shangWen-gitee/libsodium.git
+
+[submodule "components/spiffs/spiffs"]
+	path = components/spiffs/spiffs
+	url =  https://gitee.com/shangWen-gitee/spiffs.git
+
+[submodule "components/json/cJSON"]
+	path = components/json/cJSON
+	url =  https://gitee.com/shangWen-gitee/cJSON.git
+
+[submodule "components/mbedtls/mbedtls"]
+	path = components/mbedtls/mbedtls
+	url =  https://gitee.com/shangWen-gitee/mbedtls.git
+
+[submodule "components/asio/asio"]
+	path = components/asio/asio
+	url =  https://gitee.com/shangWen-gitee/asio.git
+
+[submodule "components/expat/expat"]
+	path = components/expat/expat
+	url =  https://gitee.com/shangWen-gitee/libexpat.git
+
+[submodule "components/lwip/lwip"]
+	path = components/lwip/lwip
+	url =  https://gitee.com/shangWen-gitee/esp-lwip.git
+
+[submodule "components/mqtt/esp-mqtt"]
+	path = components/mqtt/esp-mqtt
+	url =  https://gitee.com/shangWen-gitee/esp-mqtt.git
+
+[submodule "components/protobuf-c/protobuf-c"]
+	path = components/protobuf-c/protobuf-c
+	url =  https://gitee.com/shangWen-gitee/protobuf-c.git
