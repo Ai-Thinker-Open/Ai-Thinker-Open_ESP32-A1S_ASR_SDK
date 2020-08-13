@@ -3,6 +3,7 @@ set(COMPONENT_SRCDIRS
     ./MediaHal/Codec
     ./SystemSal
     ./i2c_bus
+    ./ac101_driver
     )
 
 set(COMPONENT_ADD_INCLUDEDIRS 
@@ -12,6 +13,7 @@ set(COMPONENT_ADD_INCLUDEDIRS
     ./SystemSal
     ./i2c_bus
     ./userconfig
+    ./ac101_driver
     )
 
 

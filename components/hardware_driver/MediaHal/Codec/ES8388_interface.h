@@ -117,9 +117,10 @@ typedef struct {
         .master.clk_speed = 100000\
     }, \
     .adcInput = ADC_INPUT_LINPUT1_RINPUT1,\
-    .dacOutput = DAC_OUTPUT_LOUT1 | DAC_OUTPUT_LOUT2 | DAC_OUTPUT_ROUT1 | DAC_OUTPUT_ROUT2,\
+    .dacOutput = DAC_OUTPUT_ALL,\
 };
 
+// .dacOutput = DAC_OUTPUT_LOUT1 | DAC_OUTPUT_ROUT1 | DAC_OUTPUT_LOUT2 | DAC_OUTPUT_ROUT2
 int Es8388Init(Es8388Config *cfg);
 void Es8388Uninit();
 

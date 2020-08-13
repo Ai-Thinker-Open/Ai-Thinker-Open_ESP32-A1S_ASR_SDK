@@ -1,6 +1,6 @@
 [submodule "components/esp-sr"]
 	path = components/esp-sr
-	url = https://github.com/espressif/esp-sr.git
+	url = https://gitee.com/shangWen-gitee/esp-sr.git
 [submodule "esp-idf"]
 	path = esp-idf
-	url = https://github.com/espressif/esp-idf.git
+	url = https://gitee.com/shangWen-gitee/esp-idf.git

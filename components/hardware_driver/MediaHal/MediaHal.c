@@ -31,27 +31,37 @@
 #include "msc_dac.h"
 #include "esp_log.h"
 #include "MediaHal.h"
+#include "AC101_CFG.h"
 #include "driver/i2s.h"
 #include "lock.h"
 #include "InterruptionSal.h"
 
 #define HAL_TAG "MEDIA_HAL"
 
-#define MEDIA_HAL_CHECK_NULL(a, format, b, ...) \
-    if ((a) == 0) { \
+#define MEDIA_HAL_CHECK_NULL(a, format, b, ...)   \
+    if ((a) == 0)                                 \
+    {                                             \
         ESP_LOGE(HAL_TAG, format, ##__VA_ARGS__); \
-        return b;\
+        return b;                                 \
     }
 
-#define I2S_OUT_VOL_DEFAULT     60
-#define SUPPOERTED_BITS 16
-#define I2S1_ENABLE     0   // Enable i2s1
-#define I2S_DAC_EN      0  //if enabled then a speaker can be connected to i2s output gpio(GPIO25 and GND or GPIO26 and GND), using DAC(8bits) to play music
-#define I2S_ADC_EN      0  //NOT SUPPORTED before idf 3.0. if enabled then a mic can be connected to i2s input gpio, using ADC to record 8bit-music
+#if (defined CONFIG_CODEC_CHIP_IS_AC101)
+#define IIS_SCLK 5
+#define IIS_LCLK 25
+#define IIS_DSIN 26
+#define IIS_DOUT 35
+#define GPIO_PA_EN GPIO_NUM_21
+#endif
 
-static int I2S_NUM = I2S_NUM_0;//only support 16 now and i2s0 or i2s1
-static char MUSIC_BITS = 16; //for re-bits feature, but only for 16 to 32
-static int AMPLIFIER = 1 << 8;//amplify the volume, fixed point
+#define I2S_OUT_VOL_DEFAULT 60
+#define SUPPOERTED_BITS 16
+#define I2S1_ENABLE 0 // Enable i2s1
+#define I2S_DAC_EN 0  //if enabled then a speaker can be connected to i2s output gpio(GPIO25 and GND or GPIO26 and GND), using DAC(8bits) to play music
+#define I2S_ADC_EN 0  //NOT SUPPORTED before idf 3.0. if enabled then a mic can be connected to i2s input gpio, using ADC to record 8bit-music
+
+static int I2S_NUM = I2S_NUM_0; //only support 16 now and i2s0 or i2s1
+static char MUSIC_BITS = 16;    //for re-bits feature, but only for 16 to 32
+static int AMPLIFIER = 1 << 8;  //amplify the volume, fixed point
 
 i2s_config_t i2s_config = {
 #if I2S_DAC_EN == 1
@@ -65,6 +75,14 @@ i2s_config_t i2s_config = {
     .bits_per_sample = SUPPOERTED_BITS,
 #ifdef CONFIG_ESP_LYRAT_V4_3_BOARD
     .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+#elif defined CONFIG_AI_ESP32_AUDIO_KIT_V2_2_BOARD
+
+#ifdef CONFIG_CODEC_CHIP_IS_ES8388
+    .channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT,
+#elif defined CONFIG_CODEC_CHIP_IS_AC101
+    .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
+#endif
+
 #else
     .channel_format = I2S_CHANNEL_FMT_ONLY_LEFT,
 #endif
@@ -74,8 +92,8 @@ i2s_config_t i2s_config = {
     .communication_format = I2S_COMM_FORMAT_I2S,
 #endif
     //when dma_buf_count = 3 and dma_buf_len = 300, then 3 * 4 * 300 * 2 Bytes internal RAM will be used. The multiplier 2 is for Rx buffer and Tx buffer together.
-    .dma_buf_count = 3,                            /*!< amount of the dam buffer sectors*/
-    .dma_buf_len = 300,                            /*!< dam buffer size of each sector (word, i.e. 4 Bytes) */
+    .dma_buf_count = 3, /*!< amount of the dam buffer sectors*/
+    .dma_buf_len = 300, /*!< dam buffer size of each sector (word, i.e. 4 Bytes) */
     .intr_alloc_flags = I2S_INTER_FLAG,
 #if I2S_DAC_EN == 0
     .use_apll = 1,
@@ -86,19 +104,18 @@ const i2s_pin_config_t i2s_pin = {
     .bck_io_num = IIS_SCLK,
     .ws_io_num = IIS_LCLK,
     .data_out_num = IIS_DSIN,
-    .data_in_num = IIS_DOUT
-};
+    .data_in_num = IIS_DOUT};
 
 #ifdef CONFIG_USE_ES7243
 const i2s_pin_config_t i2s1_pin = {
     .bck_io_num = IIS1_SCLK,
     .ws_io_num = IIS1_LCLK,
     .data_out_num = IIS_DSIN,
-    .data_in_num = IIS1_DOUT
-};
+    .data_in_num = IIS1_DOUT};
 #endif
 
-struct media_hal {
+struct media_hal
+{
     //globle
     MediaHalState sMediaHalState;
     int amplifier_type;
@@ -119,7 +136,6 @@ struct media_hal {
     int (*codec_set_mute)(int en);
     int (*codec_get_mute)(int *mute);
 };
-
 
 struct media_hal MediaHalConfig = {
     .sMediaHalState = 0,
@@ -190,20 +206,23 @@ struct media_hal MediaHalConfig = {
 
 int MediaHalInit(void *config)
 {
-    int ret  = 0;
+    int ret = 0;
     // Set I2S pins
-    if (I2S_NUM > 1 || I2S_NUM < 0) {
+    if (I2S_NUM > 1 || I2S_NUM < 0)
+    {
         ESP_LOGE(HAL_TAG, "Must set I2S_NUM as 0 or 1");
         return -1;
     }
     ret = i2s_driver_install(I2S_NUM, &i2s_config, 0, NULL);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         ESP_LOGE(HAL_TAG, "I2S_NUM_0 install failed");
         return -1;
     }
 #if I2S1_ENABLE
     ret = i2s_driver_install(I2S_NUM_1, &i2s_config, 0, NULL);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         ESP_LOGE(HAL_TAG, "I2S_NUM_1 install failed");
         return -1;
     }
@@ -214,14 +233,16 @@ int MediaHalInit(void *config)
     i2s_config.use_apll = 0;
     i2s_config.channel_format = I2S_CHANNEL_FMT_RIGHT_LEFT;
     ret = i2s_driver_install(I2S_NUM_1, &i2s_config, 0, NULL);
-    if (ret < 0) {
+    if (ret < 0)
+    {
         ESP_LOGE(HAL_TAG, "I2S_NUM_1 install failed");
         return -1;
     }
     ret |= i2s_set_pin(I2S_NUM_1, &i2s1_pin);
 #endif
 #ifdef ENABLE_MCLK_GPIO0
-    if (I2S_NUM == 0) {
+    if (I2S_NUM == 0)
+    {
         SET_PERI_REG_BITS(PIN_CTRL, CLK_OUT1, 0, CLK_OUT1_S);
     }
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
@@ -235,10 +256,11 @@ int MediaHalInit(void *config)
     ret |= MediaHalConfig.codec_init(config);
     ret |= MediaHalConfig.codec_config_fmt(ES_MODULE_ADC_DAC, ES_I2S_NORMAL);
     ret |= MediaHalConfig.codec_set_bit(ES_MODULE_ADC_DAC, BIT_LENGTH_16BITS);
-    ret |= MediaHalConfig.codec_set_adc_input(ADC_INPUT_LINPUT2_RINPUT2);
+    // ret |= MediaHalConfig.codec_set_adc_input(ADC_INPUT_LINPUT2_RINPUT2);
     ret |= MediaHalConfig.codec_sart(ES_MODULE_ADC_DAC);
 #ifndef CONFIG_CODEC_CHIP_IS_MICROSEMI
-    if (I2S_NUM == 0) {
+    if (I2S_NUM == 0)
+    {
         SET_PERI_REG_BITS(PIN_CTRL, CLK_OUT1, 0, CLK_OUT1_S);
     }
     PIN_FUNC_SELECT(PERIPHS_IO_MUX_GPIO0_U, FUNC_GPIO0_CLK_OUT1);
@@ -246,15 +268,16 @@ int MediaHalInit(void *config)
 #endif // I2S_DAC_EN
 
     MediaHalConfig._currentMode = CODEC_MODE_UNKNOWN;
-    if (MediaHalConfig._halLock) {
+    if (MediaHalConfig._halLock)
+    {
         mutex_destroy(MediaHalConfig._halLock);
     }
     MediaHalConfig._halLock = mutex_init();
-    gpio_config_t  io_conf;
+    gpio_config_t io_conf;
     memset(&io_conf, 0, sizeof(io_conf));
     io_conf.intr_type = GPIO_PIN_INTR_DISABLE;
     io_conf.mode = GPIO_MODE_OUTPUT;
-    io_conf.pin_bit_mask = ((1ULL<<GPIO_PA_EN));
+    io_conf.pin_bit_mask = ((1ULL << GPIO_PA_EN));
     io_conf.pull_down_en = 0;
     io_conf.pull_up_en = 0;
     gpio_config(&io_conf);
@@ -285,31 +308,35 @@ int MediaHalStart(CodecMode mode)
 #if I2S_DAC_EN == 0
     int esMode = 0;
     mutex_lock(MediaHalConfig._halLock);
-    switch (mode) {
-        case CODEC_MODE_ENCODE:
-            esMode  = ES_MODULE_ADC;
-            break;
-        case CODEC_MODE_LINE_IN:
-            esMode  = ES_MODULE_LINE;
-            break;
-        case CODEC_MODE_DECODE:
-            esMode  = ES_MODULE_DAC;
-            break;
-        case CODEC_MODE_DECODE_ENCODE:
-            esMode  = ES_MODULE_ADC_DAC;
-            break;
-        default:
-            esMode = ES_MODULE_DAC;
-            ESP_LOGW(HAL_TAG, "Codec mode not support, default is decode mode");
-            break;
+    switch (mode)
+    {
+    case CODEC_MODE_ENCODE:
+        esMode = ES_MODULE_ADC;
+        break;
+    case CODEC_MODE_LINE_IN:
+        esMode = ES_MODULE_LINE;
+        break;
+    case CODEC_MODE_DECODE:
+        esMode = ES_MODULE_DAC;
+        break;
+    case CODEC_MODE_DECODE_ENCODE:
+        esMode = ES_MODULE_ADC_DAC;
+        break;
+    default:
+        esMode = ES_MODULE_DAC;
+        ESP_LOGW(HAL_TAG, "Codec mode not support, default is decode mode");
+        break;
     }
     ESP_LOGI(HAL_TAG, "Codec mode is %d", esMode);
     int inputConfig = 0;
 
 #ifdef CONFIG_CODECCHIP_IS_ES8388
-    if (esMode == ES_MODULE_LINE) {
+    if (esMode == ES_MODULE_LINE)
+    {
         inputConfig = ADC_INPUT_LINPUT2_RINPUT2;
-    } else {
+    }
+    else
+    {
 #if DIFFERENTIAL_MIC
         inputConfig = ADC_INPUT_DIFFERENCE;
 #else
@@ -323,9 +350,12 @@ int MediaHalStart(CodecMode mode)
     inputConfig = ADC_INPUT_MIC1;
 #endif
 #elif defined CONFIG_CODECCHIP_IS_ES7149
-    if (esMode == ES_MODULE_LINE) {
+    if (esMode == ES_MODULE_LINE)
+    {
         inputConfig = ADC_INPUT_LINPUT2_RINPUT2;
-    } else {
+    }
+    else
+    {
 #if DIFFERENTIAL_MIC
         inputConfig = ADC_INPUT_DIFFERENCE;
 #else
@@ -351,20 +381,21 @@ int MediaHalStop(CodecMode mode)
 #if I2S_DAC_EN == 0
     int esMode = 0;
     mutex_lock(MediaHalConfig._halLock);
-    switch (mode) {
-        case CODEC_MODE_ENCODE:
-            esMode  = ES_MODULE_ADC;
-            break;
-        case CODEC_MODE_LINE_IN:
-            esMode  = ES_MODULE_LINE;
-            break;
-        case CODEC_MODE_DECODE:
-            esMode  = ES_MODULE_DAC;
-            break;
-        default:
-            esMode = ES_MODULE_DAC;
-            ESP_LOGI(HAL_TAG, "Codec mode not support");
-            break;
+    switch (mode)
+    {
+    case CODEC_MODE_ENCODE:
+        esMode = ES_MODULE_ADC;
+        break;
+    case CODEC_MODE_LINE_IN:
+        esMode = ES_MODULE_LINE;
+        break;
+    case CODEC_MODE_DECODE:
+        esMode = ES_MODULE_DAC;
+        break;
+    default:
+        esMode = ES_MODULE_DAC;
+        ESP_LOGI(HAL_TAG, "Codec mode not support");
+        break;
     }
 
     ret = MediaHalConfig.codec_stop(esMode);
@@ -388,12 +419,17 @@ int MediaHalSetVolume(int volume)
 #if I2S_DAC_EN == 0
     int mute;
     MediaHalConfig.codec_get_mute(&mute);
-    if (volume < 3 ) {
-        if (0 == mute) {
+    if (volume < 3)
+    {
+        if (0 == mute)
+        {
             MediaHalConfig.codec_set_mute(CODEC_MUTE_ENABLE);
         }
-    } else {
-        if ((1 == mute)) {
+    }
+    else
+    {
+        if ((1 == mute))
+        {
             MediaHalConfig.codec_set_mute(CODEC_MUTE_DISABLE);
         }
     }
@@ -458,7 +494,8 @@ int MediaHalGetMute(void)
 int MediaHalSetBits(int bitPerSample)
 {
     int ret = 0;
-    if (bitPerSample <= BIT_LENGTH_MIN || bitPerSample >= BIT_LENGTH_MAX) {
+    if (bitPerSample <= BIT_LENGTH_MIN || bitPerSample >= BIT_LENGTH_MAX)
+    {
         ESP_LOGE(HAL_TAG, "bitPerSample: wrong param");
         return -1;
     }
@@ -473,15 +510,18 @@ int MediaHalSetBits(int bitPerSample)
 int MediaHalSetClk(int i2s_num, uint32_t rate, uint8_t bits, uint32_t ch)
 {
     int ret;
-    if (bits != 16 && bits != 32) {
+    if (bits != 16 && bits != 32)
+    {
         ESP_LOGE(HAL_TAG, "bit should be 16 or 32, Bit:%d", bits);
         return -1;
     }
-    if (ch != 1 && ch != 2) {
+    if (ch != 1 && ch != 2)
+    {
         ESP_LOGE(HAL_TAG, "channel should be 1 or 2 %d", ch);
         return -1;
     }
-    if (bits > SUPPOERTED_BITS) {
+    if (bits > SUPPOERTED_BITS)
+    {
         ESP_LOGE(HAL_TAG, "Bits:%d, bits must be smaller than %d", bits, SUPPOERTED_BITS);
         return -1;
     }
@@ -494,7 +534,8 @@ int MediaHalSetClk(int i2s_num, uint32_t rate, uint8_t bits, uint32_t ch)
 
 int MediaHalGetI2sConfig(int i2sNum, void *info)
 {
-    if (info) {
+    if (info)
+    {
         memcpy(info, &i2s_config, sizeof(i2s_config_t));
     }
 #if defined CONFIG_ESP_LYRATD_FT_V1_0_BOARD || defined CONFIG_ESP_LYRATD_FT_DOSS_V1_0_BOARD
@@ -530,9 +571,12 @@ int MediaHalGetI2sAdcMode(void)
 
 int MediaHalPaPwr(int en)
 {
-    if (en) {
+    if (en)
+    {
         gpio_set_level(GPIO_PA_EN, 1);
-    } else {
+    }
+    else
+    {
         gpio_set_level(GPIO_PA_EN, 0);
     }
     return 0;
@@ -540,7 +584,8 @@ int MediaHalPaPwr(int en)
 
 int MediaHalGetState(MediaHalState *state)
 {
-    if (state) {
+    if (state)
+    {
         *state = MediaHalConfig.sMediaHalState;
         return 0;
     }
@@ -551,27 +596,33 @@ void codec_init(void)
 {
     int ret = 0;
 #if (defined CONFIG_CODEC_CHIP_IS_ES8388)
-    Es8388Config  Es8388Conf =  AUDIO_CODEC_ES8388_DEFAULT();
+    Es8388Config Es8388Conf = AUDIO_CODEC_ES8388_DEFAULT();
     ret = MediaHalInit(&Es8388Conf);
-    if (ret) {
+    if (ret)
+    {
         ESP_LOGE(HAL_TAG, "MediaHal init failed, line:%d", __LINE__);
     }
     ESP_LOGI(HAL_TAG, "CONFIG_CODEC_CHIP_IS_ES8388");
 #elif (defined CONFIG_CODEC_CHIP_IS_ES8374)
-    Es8374Config  Es8374Conf =  AUDIO_CODEC_ES8374_DEFAULT();
+    Es8374Config Es8374Conf = AUDIO_CODEC_ES8374_DEFAULT();
     ret = MediaHalInit(&Es8374Conf);
-    if (ret) {
+    if (ret)
+    {
         ESP_LOGI(HAL_TAG, "MediaHal init failed, line:%d", __LINE__);
     }
     ESP_LOGI(HAL_TAG, "CONFIG_CODEC_CHIP_IS_ES8374");
 
 #elif (defined CONFIG_CODEC_CHIP_IS_ES8311)
-    Es8311Config  es8311Cfg =  AUDIO_CODEC_ES8311_DEFAULT();
+    Es8311Config es8311Cfg = AUDIO_CODEC_ES8311_DEFAULT();
     ret = MediaHalInit(&es8311Cfg);
-    if (ret) {
+    if (ret)
+    {
         ESP_LOGI(HAL_TAG, "MediaHal init failed, line:%d", __LINE__);
     }
     ESP_LOGI(HAL_TAG, "CONFIG_CODEC_CHIP_IS_ES8311");
-
+#elif (defined CONFIG_CODEC_CHIP_IS_AC101)
+    audio_recorder_AC101_init_16KHZ_16BIT_1CHANNEL();
+    i2s_start(I2S_NUM_0);
+    ESP_LOGI(HAL_TAG, "CONFIG_CODEC_CHIP_IS_AC101");
 #endif
 }

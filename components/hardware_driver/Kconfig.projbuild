@@ -2,7 +2,7 @@ menu "Audio Media HAL"
 
 choice AUDIO_BOARD
     prompt "Audio hardware board"
-    default ESP_LYRAT_MINI_V1_1_BOARD
+    default AI_ESP32_AUDIO_KIT_V2_2_BOARD
     help
         Select an audio board to use with the ESP-ADF
 
@@ -10,6 +10,8 @@ config ESP_LYRAT_V4_3_BOARD
     bool "ESP32-Lyrat V4.3"
 config ESP_LYRAT_MINI_V1_1_BOARD
     bool "ESP32-Lyrat Mini V1.1"
+config AI_ESP32_AUDIO_KIT_V2_2_BOARD
+    bool "AI-ESP32-A1S V2.2"
 endchoice
 
 choice AUDIO_CODEC_CHIP
@@ -20,10 +22,13 @@ choice AUDIO_CODEC_CHIP
 
 config CODEC_CHIP_IS_ES8388
     bool "CODEC IS ES8388"
-    depends on ESP_LYRAT_V4_3_BOARD || ESP_LYRAT_V4_2_BOARD || ESP_WHO_ALEXA_DEMO_V1_BOARD
+    depends on ESP_LYRAT_V4_3_BOARD || ESP_LYRAT_V4_2_BOARD || ESP_WHO_ALEXA_DEMO_V1_BOARD || AI_ESP32_AUDIO_KIT_V2_2_BOARD
 config CODEC_CHIP_IS_ES8311
     bool "CODEC IS ES8311"
     depends on ESP_LYRAT_MINI_V1_1_BOARD || ESP_LYRAT_MINI_V1_0_BOARD || ESP_LYRAT_SIGHT_V1_0_BOARD
+config CODEC_CHIP_IS_AC101
+    bool "CODEC IS AC101"
+    depends on AI_ESP32_AUDIO_KIT_V2_2_BOARD
 endchoice
 
 choice USE_ES7243

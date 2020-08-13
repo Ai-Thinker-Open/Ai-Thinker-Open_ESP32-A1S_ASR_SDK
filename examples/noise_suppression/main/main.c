@@ -23,7 +23,7 @@
 #include "esp_ns.h"
 
 #define DEFAULT_VREF    1100
-#define NO_OF_SAMPLES   64          //Multisampling
+#define NO_OF_SAMPLES   128          //Multisampling
 #define NS_FRAME_BYTES     (NS_FRAME_LENGTH_MS * 16 * 2)
 
 static esp_adc_cal_characteristics_t *adc_chars;

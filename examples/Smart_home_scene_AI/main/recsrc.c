@@ -53,9 +53,22 @@ void recsrcTask(void *arg)
         }
         aec_process(aec_handle, aec_rec, aec_ref, aec_out);
 #elif defined CONFIG_AI_ESP32_AUDIO_KIT_V2_2_BOARD
+
+#ifdef CONFIG_CODEC_CHIP_IS_ES8388
+        i2s_read(I2S_NUM_0, rsp_in, 2 * AEC_FRAME_BYTES, &bytes_read, portMAX_DELAY);
+        for (int i = 0; i < AEC_FRAME_BYTES / 2; i++)
+        {
+            aec_out[i] = (rsp_in[2 * i] + rsp_in[2 * i + 1]) * 2;
+        }
+#elif defined CONFIG_CODEC_CHIP_IS_AC101
         i2s_read(I2S_NUM_0, aec_out, AEC_FRAME_BYTES, &bytes_read, portMAX_DELAY);
 #endif
+
+#endif
         rb_write(aec_rb, aec_out, AEC_FRAME_BYTES, portMAX_DELAY);
+
+        // i2s_read(I2S_NUM_0, rsp_in, 2 * AEC_FRAME_BYTES, &bytes_read, portMAX_DELAY);
+        // i2s_write(I2S_NUM_0, rsp_in, 2 * AEC_FRAME_BYTES, &bytes_read, portMAX_DELAY);
     }
 }
 

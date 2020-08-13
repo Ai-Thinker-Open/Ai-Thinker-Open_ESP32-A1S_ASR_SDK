@@ -71,6 +71,10 @@ extern "C" {
 #include "lyrat_mini_v1_1_board.h"
 #endif 
 
+#ifdef CONFIG_AI_ESP32_AUDIO_KIT_V2_2_BOARD
+#include "ai_esp32_audio_kit_v2_2_board.h"
+#endif 
+
 #ifdef __cplusplus
 }
 #endif
