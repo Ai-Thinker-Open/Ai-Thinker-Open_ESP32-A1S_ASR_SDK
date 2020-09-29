@@ -36,7 +36,7 @@ ls /dev/ttyUSB*
 ```
 cd examples/Smart_home_scene_AI/
 
-. rapid_flash.shrun
+. rapid_flash.sh
 ```
 若烧入成功，命令行会让开发板启动离线语音应用程序
 
